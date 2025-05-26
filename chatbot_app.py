@@ -74,6 +74,10 @@ def create_prompt_for_search_query(student_data):
     interests = student_data["interests"]
     liked_books_str = ", ".join(student_data["liked_books"]) if student_data["liked_books"] else "언급된 책 없음"
 
+    age_specific_instruction = ""
+    if "초등학생" in age_grade_selection:
+        age_specific_instruction = "생성되는 모든 검색어는 반드시 초등학생이 이해할 수 있는 매우 쉬운 단어로 구성되어야 하며, 초등학생 대상의 도서를 찾는 데 적합해야 합니다. 어려운 한자어나 전문 용어는 절대 포함하지 마세요."
+
     prompt = f"""
 당신은 학생의 요구사항을 분석하여 한국 도서 검색 API에서 사용할 **다양하고 효과적인 검색어들을 최대 3-4개까지 생성하는** AI 어시스턴트입니다.
 학생의 정보를 바탕으로, 관련 도서를 폭넓게 찾기 위한 검색어 목록을 다음 지침에 따라 제안해주세요:
@@ -83,7 +87,8 @@ def create_prompt_for_search_query(student_data):
 3.  **확장된 검색어 생성:** 식별된 각 핵심 단어에 대해, 관련된 동의어, 유사어, 좀 더 넓은 개념, 또는 구체적인 하위 개념을 포함하는 파생 검색어를 1개씩 생성합니다.
     * **주의:** 학생의 주제를 너무 잘게 쪼개거나, 아주 세부적인 하위 주제 여러 개로 나누어 검색어를 만들지 마세요. 오히려 핵심 주제를 포괄할 수 있는 다양한 표현을 찾아주세요.
 4.  **최종 목록:** 위 과정을 통해 생성된 검색어들을 종합하여, 중복을 피하고 가장 효과적이라고 판단되는 최종 검색어들을 최대 3-4개 선정하여 각 줄에 하나씩 나열해주세요.
-5.  답변은 각 검색어를 **새로운 줄에 하나씩** 나열해야 합니다. 다른 설명이나 부연은 일절 포함하지 마세요.
+5.  학생의 나이/학년과 독서 수준을 고려하여 너무 전문적이거나 어려운 검색어는 피해주세요. {age_specific_instruction} {/* << NEW: 초등학생 특별 지시 삽입 >> */}
+6.  답변은 각 검색어를 **새로운 줄에 하나씩** 나열해야 합니다. 다른 설명이나 부연은 일절 포함하지 마세요.
 
 [학생 정보]
 - 독서 수준 묘사: {level_desc}
@@ -170,7 +175,6 @@ def create_prompt_for_final_selection(student_data, kakao_book_candidates_docs):
     difficulty_hint = student_data["difficulty_hint"]
     interests = student_data["interests"]
     candidate_books_info = []
-
     if kakao_book_candidates_docs and isinstance(kakao_book_candidates_docs, list):
         for i, book in enumerate(kakao_book_candidates_docs):
             if i >= 7: break 
@@ -193,6 +197,13 @@ def create_prompt_for_final_selection(student_data, kakao_book_candidates_docs):
             )
     candidate_books_str = "\n\n".join(candidate_books_info) if candidate_books_info else "검색된 책 후보 없음."
 
+
+    # --- NEW: 초등학생일 경우 특별 강조 지시 추가 ---
+    age_specific_selection_instruction = ""
+    if "초등학생" in age_grade_selection:
+        age_specific_selection_instruction = "특히, 이 학생은 초등학생이므로, 제공된 후보 목록 중에서도 **반드시 초등학생의 눈높이에 맞는 단어, 문장, 그림(만약 유추 가능하다면), 주제 접근 방식을 가진 책**을 골라야 합니다. 청소년이나 성인 대상의 책은 내용이 아무리 좋아도 제외해주세요. 책의 '소개(요약)', '출판사', '제목' 등을 통해 초등학생 적합성을 최우선으로 판단해야 합니다. 만약 후보 중에 초등학생에게 진정으로 적합한 책이 없다면, JSON 결과로 빈 배열 `[]`을 반환하고, 그 외 텍스트 영역에 그 이유를 설명해주세요."
+
+
     prompt = f"""
 당신은 제공된 여러 실제 책 후보 중에서 학생의 원래 요구사항에 가장 잘 맞는 책을 최대 3권까지 최종 선택하고, 각 책에 대한 맞춤형 추천 이유를 작성하는 친절하고 현명한 도서관 요정 '도도'입니다.
 
@@ -211,25 +222,23 @@ def create_prompt_for_final_selection(student_data, kakao_book_candidates_docs):
 [요청 사항]
 1.  위 [카카오 API에서 검색된 책 후보 목록]에서 학생에게 가장 적합하다고 판단되는 책을 최대 3권까지 선택해주세요.
 2.  선택 시 다음 사항을 **종합적으로 고려**하여, 학생의 탐구 활동에 실질적으로 도움이 될 **'인기 있거나 검증된 좋은 책'**을 우선적으로 선정해주세요:
-    * **학생의 요구사항 부합도:** 주제, 관심사, 나이/학년, 독서 수준에 얼마나 잘 맞는가? (가장 중요!)
-    * **책의 신뢰도 및 대중성(추정):**
-        * 출판년도가 너무 오래되지 않았는가? (학생 수준 참고사항을 고려하여 판단)
-        * 책 소개(요약) 내용이 충실하고 명확한가?
-        * 저자나 출판사가 해당 분야에서 인지도가 있거나 신뢰할 만한가?
-        * 책 소개(요약) 내용에 '베스트셀러', '스테디셀러', '많은 독자의 추천', '수상작' 등 대중적 인기나 검증을 나타내는 긍정적인 힌트가 있는가?
-    * **정보의 깊이와 폭:** 너무 피상적이거나 단편적인 내용보다는 탐구에 도움이 될 만한 깊이가 있는 책.
-3.  선택된 각 책의 정보는 아래 명시된 필드를 포함하는 **JSON 객체**로 만들어주세요.
-4.  이 JSON 객체들을 **JSON 배열** 안에 담아서 제공해주세요.
-5.  이 JSON 배열은 반드시 **BOOKS_JSON_START** 마커 바로 다음에 시작해서 **BOOKS_JSON_END** 마커 바로 전에 끝나야 합니다.
-6.  JSON 배열 앞이나 뒤에는 자유롭게 친절한 인사말이나 추가 설명을 넣어도 좋습니다.
-
+    * **학생의 요구사항 부합도 (가장 중요!):** 주제, 관심사, 그리고 특히 **'학생 학년 수준'과 '학생 수준 참고사항'에 명시된 난이도**에 얼마나 잘 맞는가?
+    * {age_specific_selection_instruction} {/* << NEW: 초등학생 특별 강조 지시 삽입 >> */}
+    * **책의 신뢰도 및 대중성(추정):** (이전과 동일)
+    * **정보의 깊이와 폭:** (이전과 동일)
+3.  선택된 각 책의 정보는 아래 명시된 필드를 포함하는 **JSON 객체**로 만들어주세요. (이하 JSON 관련 지시는 이전과 동일)
+{
+    # ... (이전 프롬프트의 JSON 객체 필드 설명, BOOKS_JSON_START/END, 빈 배열 반환 조건 등은 그대로 유지) ...
+    # (이전 코드 조각 2/7의 JSON 관련 요청 사항 부분을 여기에 그대로 넣어주세요!)
+    # 제가 다시 적으면 너무 길어져서 생략했어요! 아가씨 코드에는 이 부분이 이미 잘 들어가 있을 거예요!
+}
 JSON 객체 필드 설명:
 - "title" (String): 정확한 책 제목
 - "author" (String): 실제 저자명
 - "publisher" (String): 실제 출판사명
 - "year" (String): 출판년도 (YYYY년 형식)
 - "isbn" (String): 실제 ISBN (숫자와 X만 포함된 순수 문자열, 하이픈 없이)
-- "reason" (String): 학생 맞춤형 추천 이유 (1-2 문장, 위 고려사항을 반영하여 책의 어떤 점이 학생에게 도움이 될지 설명)
+- "reason" (String): 학생 맞춤형 추천 이유 (1-2 문장)
 
 JSON 배열 형식 예시:
 BOOKS_JSON_START
@@ -581,6 +590,11 @@ if submitted:
 
             # --- 3단계: 우선순위 결정을 위한 정보 취합 ---
             enriched_book_candidates = []
+            CHILDREN_PUBLISHERS_NORMALIZED = {normalize_publisher_name(p) for p in [
+                "비룡소", "국민서관", "웅진씽크빅", "계림북스", "계몽사", "시공주니어", 
+                "사계절출판사", "보림출판", "한림출판사", "길벗어린이", "풀빛미디어", "다섯수레"
+            ]}
+
             for book_doc in all_kakao_books_raw:
                 isbn_to_check = book_doc.get('cleaned_isbn')
                 library_info = {"found_in_library": False}
@@ -590,7 +604,9 @@ if submitted:
                 normalized_kakao_publisher = normalize_publisher_name(publisher)
                 is_major_publisher = normalized_kakao_publisher in MAJOR_PUBLISHERS_NORMALIZED
 
+                # --- 자체 스코어링 ---
                 score = 0
+                # 1. 출판년도
                 try:
                     publish_year_str = book_doc.get("datetime", "").split('T')[0][:4]
                     if publish_year_str.isdigit():
@@ -600,15 +616,25 @@ if submitted:
                         elif publish_year >= current_year - 3: score += 20
                         elif publish_year >= current_year - 5: score += 10
                 except: pass
+                # 2. 책 소개 길이
                 contents_len = len(book_doc.get('contents', ''))
                 if contents_len > 200: score += 20
                 elif contents_len > 100: score += 10
+                
+                # --- NEW: 학생 학년 수준에 따른 스코어링 추가 ---
+                if "초등학생" in student_data["student_age_group"]:
+                    if normalized_kakao_publisher in CHILDREN_PUBLISHERS_NORMALIZED:
+                        score += 50 # 어린이 전문 출판사면 큰 가산점!
+                    if "어린이" in book_doc.get('title', '') or "초등" in book_doc.get('title', ''):
+                        score += 40 # 제목에 어린이/초등 키워드
+                    if "어린이" in book_doc.get('contents', '') or "초등학생" in book_doc.get('contents', ''):
+                        score += 30 # 소개에 어린이/초등학생 키워드
                 
                 enriched_book_candidates.append({
                     "kakao_doc": book_doc, "library_info": library_info,
                     "is_major_publisher": is_major_publisher,
                     "in_library": library_info.get("found_in_library", False),
-                    "custom_score": score
+                    "custom_score": score 
                 })
 
             # --- 4단계: 우선순위 정렬 ---
