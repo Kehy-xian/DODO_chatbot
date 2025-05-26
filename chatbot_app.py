@@ -43,7 +43,7 @@ EXCLUDED_PUBLISHER_KEYWORDS = ["씨익북스", "ceic books"] # 소문자로
 # --- 1. 기본 설정 및 API 키 준비 (이전과 동일) ---
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY"); KAKAO_API_KEY = os.getenv("KAKAO_REST_API_KEY")
-gemini_model_name = 'gemini-1.5-pro-latest' # << 아가씨, Pro 모델로 한번 시험해봐요! 정 안되면 Flash로! >>
+gemini_model_name = 'gemini-2.0-flash-lite'
 gemini_model = None; gemini_api_error = None; kakao_api_error = None
 if GEMINI_API_KEY:
     try: genai.configure(api_key=GEMINI_API_KEY); gemini_model = genai.GenerativeModel(gemini_model_name)
@@ -323,8 +323,8 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True
 )
-RPM_INFO = "분당 요청 수(RPM): 모델별 확인 필요 (예: Flash 계열 10~30 RPM)"
-RPD_INFO = "일일 요청 수(RPD): 모델별 확인 필요 (예: Flash 계열 500~1500 RPD)"
+RPM_INFO = "분당 요청 수(RPM): 30 RPM"
+RPD_INFO = "일일 요청 수(RPD): 1,000,000 RPD"
 st.sidebar.caption(f"{RPM_INFO}\n\n{RPD_INFO}")
 st.sidebar.caption("위 정보는 일반적인 무료 등급 기준이며, 실제 할당량은 다를 수 있습니다.")
 st.sidebar.markdown("---")
