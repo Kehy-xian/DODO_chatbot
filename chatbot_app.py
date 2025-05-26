@@ -521,7 +521,7 @@ if submitted:
                 "reading_level": reading_level, "topic": topic, 
                 "student_age_group": student_age_group_selection, # << NEW
                 "difficulty_hint": selected_difficulty_hint, # << NEW
-                "age_grade": age_or_grade, # 기존 변수명도 일단 유지 (프롬프트에서 age_grade_selection으로 대체)
+                "age_grade": student_age_group_selection, # 기존 변수명도 일단 유지 (프롬프트에서 age_grade_selection으로 대체)
                 "genres": genres if genres else [], "interests": interests if interests else "특별히 없음",
                 "liked_books": st.session_state.liked_books_list,
                 "disliked_conditions": disliked_conditions if disliked_conditions else "특별히 없음"
