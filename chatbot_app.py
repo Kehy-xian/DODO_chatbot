@@ -227,11 +227,6 @@ def create_prompt_for_final_selection(student_data, kakao_book_candidates_docs):
     * **책의 신뢰도 및 대중성(추정):** (이전과 동일)
     * **정보의 깊이와 폭:** (이전과 동일)
 3.  선택된 각 책의 정보는 아래 명시된 필드를 포함하는 **JSON 객체**로 만들어주세요. (이하 JSON 관련 지시는 이전과 동일)
-{
-    # ... (이전 프롬프트의 JSON 객체 필드 설명, BOOKS_JSON_START/END, 빈 배열 반환 조건 등은 그대로 유지) ...
-    # (이전 코드 조각 2/7의 JSON 관련 요청 사항 부분을 여기에 그대로 넣어주세요!)
-    # 제가 다시 적으면 너무 길어져서 생략했어요! 아가씨 코드에는 이 부분이 이미 잘 들어가 있을 거예요!
-}
 JSON 객체 필드 설명:
 - "title" (String): 정확한 책 제목
 - "author" (String): 실제 저자명
