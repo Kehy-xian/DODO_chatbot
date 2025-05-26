@@ -28,8 +28,6 @@ CHILDREN_PUBLISHERS_KEYWORDS_FOR_FILTER = [ # 정규화된 이름으로 관리
     "창비교육", "문학동네어린이", "현암주니어", "주니어김영사", "주니어rhk", "을파소",
     "걸음동무", "처음주니어"
 ]
-CHILDREN_PUBLISHERS_NORMALIZED = {normalize_publisher_name(p) for p in CHILDREN_PUBLISHERS_KEYWORDS_FOR_FILTER}
-
 
 def normalize_publisher_name(name):
     if not isinstance(name, str): name = ""
@@ -42,6 +40,8 @@ def normalize_publisher_name(name):
     if "김영사" in name_processed : return "김영사"
     if "위즈덤하우스" in name_processed : return "위즈덤하우스"
     return name_processed
+
+CHILDREN_PUBLISHERS_NORMALIZED = {normalize_publisher_name(p) for p in CHILDREN_PUBLISHERS_KEYWORDS_FOR_FILTER}
 
 MAJOR_PUBLISHERS_NORMALIZED = {normalize_publisher_name(p) for p in ORIGINAL_MAJOR_PUBLISHERS}
 EXCLUDED_PUBLISHER_KEYWORDS = ["씨익북스", "ceic books"] # 소문자로 비교
