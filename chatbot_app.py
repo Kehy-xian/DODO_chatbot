@@ -268,7 +268,7 @@ st.markdown("""
     .highlighted-advice-block h5 { color: #FFA000; margin-top: 0; margin-bottom: 10px; }
 </style>
 <div class="main-title-container">
-    <h1>📚 도도의 똑똑한 도서 추천! 🕊️</h1>
+    <h1>🧚 도도의 똑똑한 도서 추천! 🕊️</h1>
     <p>안녕하세요! 여러분의 탐구 보고서 작성을 도와줄 도서관 요정, <strong>도도</strong>입니다!<br>
     아래 정보를 입력해주시면 맞춤형 책을 찾아드릴게요! 얍얍!</p>
 </div>
@@ -279,24 +279,62 @@ if kakao_api_error: st.error(kakao_api_error); st.stop()
 
 # --- 사이드바 구성 ---
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 도도의 비밀 노트 🤫")
-st.sidebar.caption(f"오늘 날짜: {st.session_state.get('TODAYS_DATE', '날짜 정보 없음')}")
-st.sidebar.markdown(f"""
-    * 이 챗봇은 **Google Gemini API**와 **Kakao Book API**를 사용해요.
-    * AI 요정님이 가끔 너무 신나서 엉뚱한 추천을 할 수도 있으니 너그러이 봐주세옹!
-    * 버그나 개선점은 '사서쌤'께 살짝 알려주세요!
-""")
+st.sidebar.markdown(
+    """
+    <div style="text-align:center; font-weight:bold; font-size:1.15em; margin-bottom:0.3em;">
+        도도의 비밀 노트 🤫
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    f"""
+    <div style="text-align:center; color:#00796B; font-size:1.05em; margin-bottom:0.7em;">
+        오늘 날짜: {st.session_state.get('TODAYS_DATE', '날짜 정보 없음')}
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    """
+    <div style="text-align:center; font-size:0.98em; color:#333; margin-bottom:1em;">
+        • 도도는 <b>Google Gemini API</b>와 <b>Kakao Book API</b>를 사용해요.<br>
+        • AI가 가끔 너무 신나서 엉뚱한 추천을 할 수도 있으니 너그러이 봐주세요!<br>
+        • AI가 알려준 정보를 그대로 수용하지 말고, 추가 검증을 꼭 거치세요!<br>
+        • 버그나 개선점은 '개발자'에게 살짝 알려주세요!
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 st.sidebar.markdown("---")
 st.sidebar.markdown("#### ⚙️ 현재 사용 엔진 정보")
 st.sidebar.markdown(f"**AI 모델:** `{gemini_model_name}`")
-# 아래 RPM/RPD 정보는 사용하는 모델에 맞춰 정확한 정보로 업데이트 필요
+
 RPM_INFO = "분당 요청 수(RPM): 모델별 확인 필요 (예: Flash 계열 10~30 RPM)"
 RPD_INFO = "일일 요청 수(RPD): 모델별 확인 필요 (예: Flash 계열 500~1500 RPD)"
 st.sidebar.caption(f"{RPM_INFO}\n\n{RPD_INFO}")
 st.sidebar.caption("위 정보는 일반적인 무료 등급 기준이며, 실제 할당량은 다를 수 있습니다.")
 st.sidebar.markdown("---")
-st.sidebar.markdown("#### ✨ 제작 ✨")
-st.sidebar.markdown("👩‍💻 총괄 디렉터: **사서쌤** 👑\n🕊️ AI 어시스턴트: **도도** (Gemini & Kakao)")
+st.sidebar.markdown(
+    """
+    <div style="margin-bottom:0.2em;">
+        <span style="font-weight:bold;">👩‍💻 총괄 디렉터: 꾸물 👑</span><br>
+        <span style="font-weight:bold;">🕊️ AI 어시스턴트: 도도</span>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.sidebar.markdown(
+    """
+    <div style="font-size:0.92em; color:#888; text-align:center; margin-top:4px; margin-bottom:12px;">
+        문의: <a href="mailto:zambi23@gmail.com" style="color:#888; text-decoration:underline;">zambi23@gmail.com</a><br>
+        블로그: <a href="https://blog.naver.com/snailslowclub" style="color:#888; text-decoration:underline;" target="_blank">꾸물책장</a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 st.sidebar.markdown("---")
 st.sidebar.caption("API 호출은 사용량에 따라 비용이 발생할 수 있으니 주의해주세요!")
 
