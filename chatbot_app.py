@@ -195,7 +195,7 @@ def create_prompt_for_final_selection(student_data, kakao_book_candidates_docs):
 JSON 객체 필드 설명:
 - "title" (String): 정확한 책 제목
 - "author" (String): 실제 저자명
-- "publisher" (String): 실제 출판사명 {/* << NEW: 출판사 필드 추가 >> */}
+- "publisher" (String): 실제 출판사명 {{/* << NEW: 출판사 필드 추가 >> */}}
 - "year" (String): 출판년도 (YYYY년 형식)
 - "isbn" (String): 실제 ISBN (숫자와 X만 포함된 순수 문자열, 하이픈 없이)
 - "reason" (String): 학생 맞춤형 추천 이유 (1-2 문장, 위 고려사항을 반영하여 책의 어떤 점이 학생에게 도움이 될지 설명)
