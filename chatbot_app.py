@@ -393,20 +393,17 @@ else: # 기타 모델 또는 정보 없을 시
     RPD_INFO = "일일 요청 수(RPD): 모델별 확인 필요"
     CONCURRENT_USERS_ESTIMATE = "동시 사용 예상: 확인 필요"
 
-st.sidebar.caption(f"{RPM_INFO}\n\n{RPD_INFO}\n\n{CONCURRENT_USERS_ESTIMATE}")
 st.sidebar.markdown(
     f"""
-    <div style="font-size:0.95em; line-height:1.7; background:#f7f9fa; border-radius:9px; padding:15px 5px 11px 5px; margin-bottom:10px; border:1px solid #e0e4e9; text-align:center;">
-        <span style="display:inline-block; min-width:120px; font-weight:600;">📌 분당 요청 수(RPM)</span>
-        <span style="color:#222; font-weight:bold;">{RPM_INFO.split(':')[-1].strip()}</span><br>
-        <span style="display:inline-block; min-width:120px; font-weight:600;">📌 일일 요청 수(RPD)</span>
-        <span style="color:#222; font-weight:bold;">{RPD_INFO.split(':')[-1].strip()}</span><br>
-        <span style="display:inline-block; min-width:120px; font-weight:600;">📌 동시 사용 예상</span>
-        <span style="color:#2c678d; font-weight:bold;">{CONCURRENT_USERS_ESTIMATE.split(':')[-1].strip()}</span>
+    <div style="font-size:0.93em; text-align:center; margin-bottom:12px; line-height:1.8;">
+        📌 분당 요청 수(RPM) {RPM_INFO.split(':')[-1].strip()}<br>
+        📌 일일 요청 수(RPD) {RPD_INFO.split(':')[-1].strip()}<br>
+        📌 동시 사용 예상 {CONCURRENT_USERS_ESTIMATE.split(':')[-1].strip()}
     </div>
     """,
     unsafe_allow_html=True
 )
+
 st.sidebar.markdown(
     """
     <div style="font-size:0.80em; line-height:1.8; color:gray; text-align:center;">
