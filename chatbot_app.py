@@ -1,7 +1,3 @@
-# chatbot_app.py
-# 사용 전, 터미널(Anaconda Prompt)에서 아래 라이브러리들을 설치해주세요!
-# pip install streamlit google-generativeai python-dotenv requests
-
 import streamlit as st
 import google.generativeai as genai
 import os
