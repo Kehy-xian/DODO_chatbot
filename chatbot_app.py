@@ -317,25 +317,30 @@ st.sidebar.markdown(
 )
 st.sidebar.markdown(
     f"""
-    <div style="text-align:center; margin-bottom:6px;">
+    <div style="text-align:center; margin-bottom:10px;">
         <b>AI 모델:</b> <code>{gemini_model_name}</code>
     </div>
     """,
     unsafe_allow_html=True
 )
-
-# 요청 수 정보는 한 줄로 붙이고, 줄간격 좁게
 st.sidebar.markdown(
-    f"""
-    <div style="font-size:0.85em; line-height:1.2; text-align:center; margin-bottom:4px;">
+    """
+    <div style="font-size:0.88em; line-height:1.6; text-align:center; margin-bottom:14px;">
         📌 <b>분당 요청 수(RPM)</b>: 30<br>
         📌 <b>일일 요청 수(RPD)</b>: 1,000,000
     </div>
     """,
     unsafe_allow_html=True
 )
-
-st.sidebar.caption("위 정보는 일반적인 무료 등급 기준이며, 실제 할당량은 다를 수 있습니다.")
+st.sidebar.markdown(
+    """
+    <div style="font-size:0.80em; line-height:1.8; color:gray; text-align:center;">
+        위 정보는 일반적인 무료 등급 기준이며,<br>
+        실제 할당량은 다를 수 있습니다.
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     """
