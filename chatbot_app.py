@@ -417,7 +417,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown(
     """
     <div style="text-align:center; margin-bottom:0.2em;">
-        <span style="font-weight:bold;">👩‍💻 총괄 디렉터: 꾸물 👑</span><br>
+        <span style="font-weight:bold;">👩‍💻 총괄 디렉터: 꾸물 🐌</span><br>
         <span style="font-weight:bold;">🕊️ AI 어시스턴트: 도도</span>
     </div>
     """,
