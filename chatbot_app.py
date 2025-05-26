@@ -317,15 +317,24 @@ st.sidebar.markdown(
 )
 st.sidebar.markdown(
     f"""
-    <div style="text-align:center;">
-        <b>AI 모델:</b> `{gemini_model_name}`
+    <div style="text-align:center; margin-bottom:6px;">
+        <b>AI 모델:</b> <code>{gemini_model_name}</code>
     </div>
     """,
     unsafe_allow_html=True
 )
-RPM_INFO = "분당 요청 수(RPM): 30 RPM"
-RPD_INFO = "일일 요청 수(RPD): 1,000,000 RPD"
-st.sidebar.caption(f"{RPM_INFO}\n\n{RPD_INFO}")
+
+# 요청 수 정보는 한 줄로 붙이고, 줄간격 좁게
+st.sidebar.markdown(
+    f"""
+    <div style="font-size:0.85em; line-height:1.2; text-align:center; margin-bottom:4px;">
+        📌 <b>분당 요청 수(RPM)</b>: 30<br>
+        📌 <b>일일 요청 수(RPD)</b>: 1,000,000
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 st.sidebar.caption("위 정보는 일반적인 무료 등급 기준이며, 실제 할당량은 다를 수 있습니다.")
 st.sidebar.markdown("---")
 st.sidebar.markdown(
