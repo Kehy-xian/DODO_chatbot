@@ -297,7 +297,7 @@ st.sidebar.markdown(
 )
 st.sidebar.markdown(
     """
-    <div style="text-align:center; font-size:0.98em; color:#333; margin-bottom:1em;">
+    <div style="font-size:0.98em; color:#333; margin-bottom:1em; text-align:left;">
         • 도도는 <b>Google Gemini API</b>와 <b>Kakao Book API</b>를 사용해요.<br>
         • AI가 가끔 너무 신나서 엉뚱한 추천을 할 수도 있으니 너그러이 봐주세요!<br>
         • AI가 알려준 정보를 그대로 수용하지 말고, 추가 검증을 꼭 거치세요!<br>
@@ -306,11 +306,9 @@ st.sidebar.markdown(
     """,
     unsafe_allow_html=True
 )
-
 st.sidebar.markdown("---")
 st.sidebar.markdown("#### ⚙️ 현재 사용 엔진 정보")
 st.sidebar.markdown(f"**AI 모델:** `{gemini_model_name}`")
-
 RPM_INFO = "분당 요청 수(RPM): 모델별 확인 필요 (예: Flash 계열 10~30 RPM)"
 RPD_INFO = "일일 요청 수(RPD): 모델별 확인 필요 (예: Flash 계열 500~1500 RPD)"
 st.sidebar.caption(f"{RPM_INFO}\n\n{RPD_INFO}")
@@ -318,7 +316,7 @@ st.sidebar.caption("위 정보는 일반적인 무료 등급 기준이며, 실�
 st.sidebar.markdown("---")
 st.sidebar.markdown(
     """
-    <div style="margin-bottom:0.2em;">
+    <div style="text-align:center; margin-bottom:0.2em;">
         <span style="font-weight:bold;">👩‍💻 총괄 디렉터: 꾸물 👑</span><br>
         <span style="font-weight:bold;">🕊️ AI 어시스턴트: 도도</span>
     </div>
@@ -336,7 +334,8 @@ st.sidebar.markdown(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.caption("API 호출은 사용량에 따라 비용이 발생할 수 있으니 주의해주세요!")
+st.sidebar.caption("⚠️ API 호출은 사용량에 따라 비용이 발생할 수 있으니 주의해주세요!")
+
 
 st.markdown("---")
 st.markdown("<h3 class='centered-subheader'>📚 최근 재미있게 읽은 책 (선택 사항)</h3>", unsafe_allow_html=True)
