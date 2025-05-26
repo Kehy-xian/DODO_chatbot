@@ -246,7 +246,7 @@ def get_ai_recommendation(model_to_use, prompt_text, generation_config=None):
 # --- 3. Streamlit 앱 UI 구성 ---
 st.set_page_config(page_title="도서관 요정 도도의 도서 추천! 🕊️", page_icon="🧚", layout="centered")
 
-st.info("이 서비스는 AI를 활용한 도서 추천으로, 사용량이 많거나 복잡한 요청 시 응답이 지연될 수 있습니다. 너른 양해 부탁드려요! 😊")
+st.info("사용량이 많거나 복잡한 요청 시 응답이 지연될 수 있습니다. 너른 양해 부탁드려요! 😊")
 
 st.markdown("""
 <style>
