@@ -415,18 +415,24 @@ st.set_page_config(page_title="도서관 요정 도도의 도서 추천! 🕊️
 st.markdown(
     """
     <div style='
-        background-color: #f0f0f0; /* 약간 더 부드러운 회색 */
-        padding: 13px 8px 11px 8px; 
-        border-radius: 7px; 
-        margin-bottom: 5px; /* 하단 마진 약간 줄임 */
-        font-size: 1.03em; /* 살짝 키움 */
-        color: #343434; /* 기존 색상 유지 */
-        font-weight: 500; /* 기존 두께 유지 */
-        text-align: center; /* 가운데 정렬 */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #f0f0f0;
+        padding: 13px 8px 11px 8px;
+        border-radius: 7px;
+        margin-bottom: 5px;
+        font-size: 1.03em;
+        color: #343434;
+        font-weight: 500;
+        width: 100%;
     '>
-        이 서비스는 AI를 활용한 도서 추천으로,<br>
-        사용량이 많거나 복잡한 요청 시 응답이 지연될 수 있습니다.<br>
-        너른 양해 부탁드려요! 😊
+        <div style="width:100%;text-align:center;">
+            이 서비스는 AI를 활용한 도서 추천으로,<br>
+            사용량이 많거나 복잡한 요청 시 응답이 지연될 수 있습니다.<br>
+            너른 양해 부탁드려요! 😊
+        </div>
     </div>
     """,
     unsafe_allow_html=True
