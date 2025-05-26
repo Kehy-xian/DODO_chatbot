@@ -324,7 +324,7 @@ st.markdown("""
 </style>
 <div class="main-title-container">
     <h1>🧑‍🎓 도도의 똑똑한 도서 추천! 🕊️</h1>
-    <p>안녕하세요! 여러분의 도서 검색을 도와줄 도서관 요정 🧚, <strong>도도</strong>입니다!<br>
+    <p>안녕하세요! 여러분의 도서 검색을 도와줄 도서관 요정 🧚<strong>도도</strong>입니다!<br>
     아래 정보를 입력해주시면 맞춤형 책을 찾아드릴게요! 얍얍!</p>
 </div>
 """, unsafe_allow_html=True)
