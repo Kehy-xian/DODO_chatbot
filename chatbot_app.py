@@ -278,8 +278,26 @@ def get_ai_recommendation(model_to_use, prompt_text, generation_config=None):
 st.set_page_config(page_title="도서관 요정 도도의 도서 추천! 🕊️", page_icon="🧚", layout="centered")
 
 # --- NEW: 서비스 소개 문구 (가운데 정렬) ---
-st.markdown("<p style='text-align: center; background-color: #f0f0f0; padding: 8px; border-radius: 5px;'>이 서비스는 AI를 활용한 도서 추천으로, 사용량이 많거나 복잡한 요청 시 응답이 지연될 수 있습니다. 너른 양해 부탁드려요! 😊</p>", unsafe_allow_html=True)
-st.markdown("---") # 구분선 추가
+st.markdown(
+    """
+    <div style='
+        background-color: #f0f0f0; 
+        padding: 13px 8px 11px 8px; 
+        border-radius: 7px; 
+        margin-bottom: 5px;
+        font-size: 1.03em;
+        color: #343434;
+        font-weight: 500;
+        text-align: center;
+    '>
+        이 서비스는 AI를 활용한 도서 추천으로,<br>
+        사용량이 많거나 복잡한 요청 시 응답이 지연될 수 있습니다.<br>
+        너른 양해 부탁드려요! 😊
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+st.markdown("---")
 
 st.markdown("""
 <style>
