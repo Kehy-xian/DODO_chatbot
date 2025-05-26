@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 import requests
 import json
+import re
 # 추가 모듈
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -76,42 +77,96 @@ if 'current_book_to_add' not in st.session_state: st.session_state.current_book_
 
 # --- 2. AI 및 API 호출 관련 함수들 ---
 
+def extract_search_queries_from_llm(llm_response, topic, genres):
+    lines = [q.strip().replace("*", "").replace("#", "") for q in llm_response.split('\n') if q.strip()]
+    filtered = []
+    for q in lines:
+        word_count = len(q.split())
+        if 1 <= word_count <= 3 and re.match(r"^[가-힣a-zA-Z0-9 \-]+$", q):
+            filtered.append(q)
+    fallback = []
+    if topic and genres:
+        for g in genres:
+            fg = f"{topic.strip()} {g.strip()}"
+            if fg not in filtered:
+                fallback.append(fg)
+    if topic and topic.strip() not in filtered:
+        fallback.append(topic.strip())
+    if genres:
+        for g in genres:
+            if g.strip() not in filtered:
+                fallback.append(g.strip())
+    filtered += [f for f in fallback if f not in filtered][:3]
+    filtered = list(dict.fromkeys(filtered))
+    return filtered[:6]
+
 # --- Gemini 검색어 생성 프롬프트 (사용자 요청대로 다변화/난이도 강조) ---
 def create_prompt_for_search_query(student_data):
-    level_desc = student_data["reading_level"]
-    topic = student_data["topic"]
-    age_grade_selection = student_data["student_age_group"]
-    difficulty_hint = student_data["difficulty_hint"]
-    genres_str = ", ".join(student_data["genres"]) if student_data["genres"] else "특별히 없음"
-    interests = student_data["interests"]
-    liked_books_str = ", ".join(student_data["liked_books"]) if student_data["liked_books"] else "언급된 책 없음"
+    level_desc = student_data.get("reading_level", "")
+    topic = student_data.get("topic", "")
+    age_grade_selection = student_data.get("student_age_group", "")
+    difficulty_hint = student_data.get("difficulty_hint", "")
+    genres = student_data.get("genres", [])
+    genres_str = ", ".join(genres) if genres else "없음"
+    interests = student_data.get("interests", "")
+    liked_books_str = ", ".join(student_data.get("liked_books", [])) if student_data.get("liked_books") else "없음"
 
-    age_specific_instruction = ""
-    if "초등학생" in age_grade_selection:
-        age_specific_instruction = "생성되는 모든 검색어는 반드시 초등학생이 이해할 수 있는 쉬운 단어로 구성되어야 하며, 초등학생 대상의 도서를 찾는 데 적합해야 합니다. 어려운 한자어나 전문 용어는 포함하지 마세요."
-    elif "중학생" in age_grade_selection:
-        age_specific_instruction = "검색어는 중학생 눈높이에 맞게 쉽고 명확한 단어로 생성해 주세요. 고등/성인/대학생용 검색어는 제외."
-    elif "고등학생" in age_grade_selection:
-        age_specific_instruction = "고등학생 수준의 책을 찾을 수 있는 검색어(너무 전문적인 대학 교재는 제외)를 만들어 주세요."
+    # fallback 예시 자동 생성 (주제+장르, 주제, 장르 단독 등)
+    fallback_keywords = []
+    if topic and genres:
+        for g in genres:
+            fallback_keywords.append(f"{topic.strip()} {g.strip()}")
+    if topic and topic not in fallback_keywords:
+        fallback_keywords.append(topic.strip())
+    for g in genres:
+        if g not in fallback_keywords:
+            fallback_keywords.append(g)
+    fallback_example_str = "\n".join(fallback_keywords[:3])  # 예시 3개까지만
+
+    # level_desc 활용 난이도 안내 문구
+    if "상" in level_desc:
+        reading_hint = "(심화: 더 넓고 어려운 개념/용어도 가능)"
+    elif "중" in level_desc:
+        reading_hint = "(보통: 학교 권장 수준, 입문~중간 정도 난이도)"
+    elif "하" in level_desc:
+        reading_hint = "(기초: 쉬운 단어/초보자·입문자용 중심, 전문용어X)"
+    else:
+        reading_hint = ""
+
+    # age_grade 기반 세부 난이도/용어 안내
+    if "초등" in age_grade_selection:
+        age_specific_instruction = "초등학생이 이해할 수 있는 쉬운 단어로만 생성, 한자/전문용어/어려운 학술어 금지."
+    elif "중등" in age_grade_selection or "중학생" in age_grade_selection:
+        age_specific_instruction = "중학생 눈높이에 맞는 명확하고 단순한 단어 위주로 생성, 고등/대학/성인 전문용어는 제외."
+    elif "고등" in age_grade_selection or "고등학생" in age_grade_selection:
+        age_specific_instruction = "고등학생 수준, 대학 교재/성인 전문용어/지나치게 심화된 키워드는 피하세요."
+    else:
+        age_specific_instruction = ""
 
     prompt = f"""
-당신은 학생의 요구사항을 분석해 한국 도서 검색 API에서 사용할 **다양하고 효과적인 검색어를 최대 4개**까지 제안하는 도서관 AI입니다.
-1. 핵심 주제를 일반적, 구체적, 연관 주제, 확장 주제로 각각 바꾼 검색어를 생성해주세요.
-2. 너무 세부적이거나 너무 광범위하지 않게, 핵심 탐구와 연결되는 폭넓은 각도(예시: 입문/윤리/사례/실용/입문자용/청소년용 등)로 제안해주세요.
-3. 학생 연령 및 난이도 정보를 반드시 반영: {age_specific_instruction}
-4. 답변은 검색어 1개씩 줄바꿈해서, 불필요한 부연 설명은 넣지 말고 최대 4개만 제안하세요.
+아래 학생 정보를 종합적으로 고려해,
+한국 도서 검색 엔진(카카오 등)에서 실제 책이 잘 검색될 수 있는 “명사+명사” 중심의 검색 키워드(3~5개)를 생성하세요.
 
-[학생 정보]
-- 독서 수준: {level_desc}
-- 학년/연령: {age_grade_selection}
-- 주요 주제: {topic}
-- 장르: {genres_str}
-- 관심사: {interests}
-- 최근 읽은 책: {liked_books_str}
+- **모든 입력정보(주제, 장르, 관심사, 독서 수준, 연령, 난이도, 선호 도서 등)를 반드시 반영**하여,
+  해당 학생에게 “실제 추천이 유의미한” 키워드를 제안해야 합니다.
+- 각 검색어는 반드시 1~3개 “명사”의 조합이어야 하며(예: ‘건축 소설’, ‘건축가’, ‘건축 이야기’, ‘과학 만화’ 등),
+  “설명문, 너무 긴 복합어, 완전한 문장형, 예술적 수식, 문단, 느낌표, 불필요한 꾸밈말, 부연 설명”은 절대 포함하지 마세요.
+- 키워드는 반드시 실제 책 제목/분야/목차/도서관 분류에서 많이 쓰이는 현실적인 단어만을 조합해야 합니다.
+- 주제와 장르/관심사를 다양한 방식으로 조합하여 생성하세요.
+- 각 키워드는 한 줄에 하나씩 제안하세요(최소 3개~최대 5개, 부연설명 금지).
+- [예시]
+{fallback_example_str}
 
-난이도 참고사항:{difficulty_hint}
+※ 독서 수준: {level_desc} {reading_hint}
+※ 연령/학년: {age_grade_selection} ({age_specific_instruction})
+※ 난이도 참고: {difficulty_hint}
+※ 관심사: {interests}
+※ 최근 읽은 책: {liked_books_str}
 
-최종 검색어 목록 (각 줄에 하나씩, 최대 4개):
+[입력정보]
+주제: {topic}
+장르: {genres_str}
+관심사: {interests}
 """
     return prompt
 
@@ -641,7 +696,11 @@ if submitted:
             search_queries_prompt = create_prompt_for_search_query(student_data)
             search_query_gen_config = genai.GenerationConfig(temperature=0.1) # 검색어는 일관성있게
             search_queries_response = get_ai_recommendation(gemini_model, search_queries_prompt, generation_config=search_query_gen_config)
-            generated_search_queries = [q.strip().replace("*","").replace("#","") for q in search_queries_response.split('\n') if q.strip()]
+            generated_search_queries = extract_search_queries_from_llm(
+                search_queries_response,
+                student_data["topic"],
+                student_data["genres"]
+            )
 
             if not generated_search_queries or "AI 요정님 호출 중" in search_queries_response or "AI 모델이 준비되지 않았어요" in search_queries_response or "콘텐츠 안전 문제일 수 있어요" in search_queries_response:
                 st.error(f"도도 요정이 검색어 생성에 실패했어요: {search_queries_response}")
