@@ -298,7 +298,7 @@ st.sidebar.markdown(
 st.sidebar.markdown(
     """
     <ul style="font-size:0.98em; color:#333; margin-bottom:1em; margin-left:-1em;">
-        <li>도도는 <b>Gemini API</b>와 <b>Kakao API</b>를 사용해요.</li>
+        <li>도도는 <b>Gemini</b>와 <b>Kakao API</b>를 사용해요.</li>
         <li>AI가 가끔 너무 신나서 엉뚱한 추천을 할 수도 있으니 너그러이 봐주세요!</li>
         <li>AI가 알려준 정보를 그대로 수용하지 말고, 추가 검증을 꼭 거치세요!</li>
         <li>버그나 개선점은 '개발자'에게 알려주세요!</li>
