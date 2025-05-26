@@ -396,9 +396,9 @@ else: # 기타 모델 또는 정보 없을 시
 st.sidebar.markdown(
     f"""
     <div style="font-size:0.85em; text-align:center; margin-bottom:12px; line-height:1.8;">
-        📌 분당 요청 수(RPM) {RPM_INFO.split(':')[-1].strip()}<br>
-        📌 일일 요청 수(RPD) {RPD_INFO.split(':')[-1].strip()}<br>
-        📌 동시 사용 예상 {CONCURRENT_USERS_ESTIMATE.split(':')[-1].strip()}
+        📌 분당 요청 수(RPM) <b>{RPM_INFO.split(':')[-1].strip()}</b><br>
+        📌 일일 요청 수(RPD) <b>{RPD_INFO.split(':')[-1].strip()}</b><br>
+        📌 동시 사용 <b>{CONCURRENT_USERS_ESTIMATE.split(':')[-1].strip()}</b>
     </div>
     """,
     unsafe_allow_html=True
