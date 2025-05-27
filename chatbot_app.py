@@ -856,21 +856,26 @@ if submitted:
             
             st.info(f"주제 다양성을 고려하여 엄선된 {len(candidates_for_gemini_selection_docs)}권의 최종 후보를 도도 요정에게 전달하여 최종 추천을 받을게요!")
 
-
             # --- 5단계: 정렬된 후보를 바탕으로 Gemini에게 최종 선택 및 이유 생성 요청 ---
             final_selection_prompt = create_prompt_for_final_selection(student_data, candidates_for_gemini_selection_docs)
             final_selection_gen_config = genai.GenerationConfig(temperature=0.4) # 추천 이유는 약간의 창의성 허용
             final_recs_text = get_ai_recommendation(gemini_model, final_selection_prompt, generation_config=final_selection_gen_config)
 
-            # --- 6단계: 최종 결과 파싱 및 표시 (기존 로직과 거의 동일) ---
-            books_data_from_ai = []; intro_text_from_ai = ""
+            # --- 6단계: 최종 결과 파싱 및 표시 ---
+            books_data_from_ai = [] 
+            intro_text_from_ai = ""
+            text_after_json_block = "" # JSON 블록 이후 텍스트를 저장할 변수
+
             try:
                 json_start_marker = "BOOKS_JSON_START"; json_end_marker = "BOOKS_JSON_END"
                 start_idx = final_recs_text.find(json_start_marker); end_idx = final_recs_text.find(json_end_marker)
 
                 if start_idx != -1 and end_idx != -1 and start_idx < end_idx:
                     intro_text_from_ai = final_recs_text[:start_idx].strip()
-                    if intro_text_from_ai: st.markdown(intro_text_from_ai) # AI의 도입부 설명 표시
+                    text_after_json_block = final_recs_text[end_idx + len(json_end_marker):].strip() # 먼저 정의
+
+                    if intro_text_from_ai: 
+                        st.markdown(intro_text_from_ai) # AI의 도입부 설명 표시
                     
                     json_string_raw = final_recs_text[start_idx + len(json_start_marker) : end_idx].strip()
                     if json_string_raw.startswith("```json"): json_string_raw = json_string_raw[len("```json"):].strip()
@@ -878,38 +883,38 @@ if submitted:
                     
                     if json_string_raw and json_string_raw != "[]":
                         books_data_from_ai = json.loads(json_string_raw)
-                        if not isinstance(books_data_from_ai, list): # 혹시나 단일 객체로 올 경우 대비
+                        if not isinstance(books_data_from_ai, list): 
                             st.warning("AI가 JSON 배열 형태로 주지 않았어요. 😥 결과를 확인해주세요."); books_data_from_ai = []
                     
-                    # JSON이 비었거나 (AI가 [] 반환 또는 부적절한 JSON) 파싱에 문제가 생겼을 때
-                    if not books_data_from_ai :
-                        # AI가 빈 배열을 반환하고, JSON 바깥에 이유를 설명했을 수 있음.
-                        # intro_text_from_ai는 위에서 이미 표시되었을 수 있고, outro_text도 확인.
-                        outro_text_when_empty_json = final_recs_text[end_idx + len(json_end_marker):].strip() if end_idx != -1 else ""
+                    # Case 1: 성공적으로 책 목록이 파싱된 경우
+                    if books_data_from_ai:
+                        if text_after_json_block: # JSON 이후 추가 설명이 있다면 표시
+                            st.markdown("---"); st.markdown(text_after_json_block)
+                    # Case 2: 책 목록이 비어있는 경우 (json_string_raw가 "[]" 였거나, 파싱 후 비워짐)
+                    else: 
+                        if text_after_json_block: # AI가 빈 배열과 함께 설명을 뒤에 붙였다면 표시
+                            st.markdown("---"); st.markdown(text_after_json_block)
                         
-                        # AI가 JSON 외부에도 별다른 설명 없이 정말 []만 보냈다면, 또는 intro/outro가 부적절하면 일반 조언 표시
-                        if not intro_text_from_ai.strip() and not outro_text_when_empty_json.strip():
-                             st.info("도도 요정이 카카오 후보 중에서 최종 추천할 만한 책을 고르지 못했나 봐요...")
-                        elif outro_text_when_empty_json.strip(): # JSON 이후에 뭔가 설명이 있다면 표시
-                            st.markdown("---"); st.markdown(outro_text_when_empty_json)
-
-
-                        # "결과 없음 조언" 표시 (JSON이 비었을 때 항상 표시되도록)
-                        st.markdown("<div class='highlighted-advice-block'>", unsafe_allow_html=True)
-                        st.markdown(f"##### 🧚 도도의 추가 조언 (최종 추천 실패 시)")
-                        prompt_for_advice_final = create_prompt_for_no_results_advice(student_data, generated_search_queries) # 최초 검색어 기반 조언
-                        advice_text_final = get_ai_recommendation(gemini_model, prompt_for_advice_final, generation_config=genai.GenerationConfig(temperature=0.5))
-                        st.markdown(advice_text_final)
-                        st.markdown("</div>", unsafe_allow_html=True)
-
-                    # JSON 이후의 텍스트가 있다면 표시 (성공/실패 무관하게)
-                    outro_text_from_ai = final_recs_text[end_idx + len(json_end_marker):].strip() if end_idx != -1 else ""
-                    if outro_text_from_ai and books_data_from_ai: # 성공적으로 책 목록이 있을 때만 outro 표시 (중복 방지)
-                         st.markdown("---"); st.markdown(outro_text_from_ai)
+                        # AI가 제공한 intro 또는 JSON 이후 텍스트에 충분한 설명이 없다고 판단될 때만 추가 조언
+                        # intro_text_from_ai는 이미 위에서 markdown으로 표시되었음
+                        ai_provided_sufficient_explanation = intro_text_from_ai.strip() or text_after_json_block.strip()
+                        
+                        if not ai_provided_sufficient_explanation:
+                            st.info("도도 요정이 최종 추천할 만한 책을 찾지 못했어요. 아래 추가 조언을 확인해보세요!")
+                            st.markdown("<div class='highlighted-advice-block'>", unsafe_allow_html=True)
+                            st.markdown(f"##### 🧚 도도의 추가 조언 (최종 추천 실패 시)")
+                            prompt_for_advice_final = create_prompt_for_no_results_advice(student_data, generated_search_queries)
+                            advice_text_final = get_ai_recommendation(gemini_model, prompt_for_advice_final, generation_config=genai.GenerationConfig(temperature=0.5))
+                            st.markdown(advice_text_final)
+                            st.markdown("</div>", unsafe_allow_html=True)
+                        # else: AI가 이미 설명을 제공했으므로 (intro 또는 text_after_json_block) 추가 조언은 생략
                 
-                else: # 마커를 아예 못 찾았을 경우 -> AI의 전체 답변을 그대로 보여줌
-                    with st.container(border=True): st.markdown(final_recs_text)
+                else: # 마커를 아예 못 찾았을 경우
+                    with st.container(border=True): st.markdown(final_recs_text) # AI의 전체 답변 표시
                     st.warning("앗, AI 답변에서 약속된 책 정보(JSON) 부분을 찾지 못했어요. AI의 전체 답변을 위에 표시했어요.", icon="⚠️")
+                    # 이 경우에도 일반적인 "결과 없음 조언"을 추가로 표시할 수 있습니다 (선택 사항).
+                    # 예: if "추천할 만한 책을 찾지 못했습니다" 등의 키워드가 final_recs_text에 없다면 추가 조언 표시
+                    # st.markdown("<div class='highlighted-advice-block'>", ...)
             
             except json.JSONDecodeError as json_err:
                 st.error(f"AI 생성 책 정보(JSON) 파싱 실패! 😭 내용: {json_err}", icon="🔥"); st.code(final_recs_text, language="text")
