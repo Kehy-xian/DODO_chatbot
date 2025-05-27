@@ -300,8 +300,8 @@ def enriched_score_function(book_doc, student_data):
     publisher = book_doc.get('publisher', '')
     normalized_publisher = normalize_publisher_name(publisher)
     title = book_doc.get('title', '').lower() # 소문자 변환 추가
-    contents = book_doc.get('contents', '').lower() # 소문자 변환 추가
-
+    contents = book_doc.get('contents', '').lower() # 소문자 변환 추가 
+    
     # 1. 출판년도
     try:
         publish_year_str = book_doc.get("datetime", "").split('T')[0][:4]
@@ -340,10 +340,25 @@ def enriched_score_function(book_doc, student_data):
             score += 10
         # 고등학생은 내용 일치도가 더 중요할 수 있어 contents 가점은 일단 보류 또는 다른 방식으로 접근
 
-    # 도서관 소장 여부 (gemini 최종 선택 전 후보군 우선순위에는 미반영, 최종 결과 표시에만 활용)
-    # 이 함수는 점수만 반환
+    # 0. 도서관 소장 여부 가산점 추가
+    if book_doc.get("found_in_library"):
+        score += 40  # (30~50점 추천, 전체 점수 분포에 맞게)
+    
     return score
 
+def select_final_candidates_with_library_priority(candidates, top_n=4):
+    """소장자료가 있으면 반드시 상위 1권 포함, 없으면 그냥 다양성/적합성 top_n 반환 + 안내문구"""
+    library_books = [b for b in candidates if b.get("found_in_library")]
+    non_library_books = [b for b in candidates if not b.get("found_in_library")]
+    library_books = sorted(library_books, key=lambda x: x['score'], reverse=True)
+    non_library_books = sorted(non_library_books, key=lambda x: x['score'], reverse=True)
+    if library_books:
+        final_candidates = [library_books[0]] + non_library_books[:top_n-1]
+        library_notice = "도서관 소장 자료가 포함된 추천 리스트입니다."
+    else:
+        final_candidates = non_library_books[:top_n]
+        library_notice = "아쉽게도 도서관에 소장된 추천 도서는 없어요. 대신 이런 책을 추천해요!"
+    return final_candidates, library_notice
 
 def create_prompt_for_final_selection(student_data, kakao_book_candidates_docs):
     level_desc = student_data["reading_level"]
@@ -356,7 +371,7 @@ def create_prompt_for_final_selection(student_data, kakao_book_candidates_docs):
     # 최대 7권까지 후보로 보여주는 것은 동일 (실제로는 클러스터링 결과로 3~4권이 주로 전달될 것)
     if kakao_book_candidates_docs and isinstance(kakao_book_candidates_docs, list):
         for i, book in enumerate(kakao_book_candidates_docs):
-            if i >= 7: break # Gemini에게 전달할 후보 최대 개수 제한
+            if i >= 10: break # Gemini에게 전달할 후보 최대 개수 제한
             if not isinstance(book, dict): continue
             try:
                 publish_date_str = book.get("datetime", "")
@@ -401,7 +416,7 @@ def create_prompt_for_final_selection(student_data, kakao_book_candidates_docs):
 {candidate_books_str}
 
 [요청 사항]
-1.  위 [주요 책 후보 목록]에서 학생에게 가장 적합하다고 판단되는 책을 최대 3권까지 선택해주세요.
+1.  위 [주요 책 후보 목록]에서 학생에게 가장 적합하다고 판단되는 책을 최소 2권, 가능하다면 최대 5권까지 선택해주세요.
 2.  선택 시 다음 사항을 **종합적으로 고려**하여, 학생의 탐구 활동에 실질적으로 도움이 될 **'인기 있거나 검증된 좋은 책'**을 우선적으로 선정해주세요:
     * **학생의 요구사항 부합도 (가장 중요!):** 주제, 관심사, 그리고 특히 **'학생 학년 수준'과 '학생 수준 참고사항'에 명시된 난이도**에 얼마나 잘 맞는가?
     * {age_specific_selection_instruction}
@@ -798,7 +813,7 @@ if submitted:
             st.info(f"학생 수준 필터링 후 {len(pre_filtered_books)}권의 책으로 줄었어요. 이제 이 중에서 다양한 주제의 책을 골라볼게요!")
 
             # --- 4단계: TF-IDF 군집화로 다양한 주제의 책 N권 선별 ---
-            N_CLUSTERS_FOR_GEMINI = 4 # Gemini에게 전달할 대표 후보 수 (최종 추천은 3권 이내)
+            N_CLUSTERS_FOR_GEMINI = 10 # Gemini에게 전달할 대표 후보 수 (최종 추천은 3권 이내)
                                       # 다양성을 위해 약간 더 많이 뽑아서 전달
             
             if len(pre_filtered_books) == 0: # 이 경우는 위에서 처리되지만, 안전장치
@@ -823,6 +838,21 @@ if submitted:
                 st.markdown(advice_text)
                 st.markdown("</div>", unsafe_allow_html=True)
                 st.stop()
+
+            for doc in candidates_for_gemini_selection_docs:
+                isbn = doc.get('cleaned_isbn', '') or doc.get('isbn', '')
+                if isbn:
+                    clean_isbn = "".join(filter(lambda x: x.isdigit() or x.upper() == 'X', str(isbn)))
+                    lib_info = find_book_in_library_by_isbn(clean_isbn)
+                    doc["found_in_library"] = lib_info.get("found_in_library", False)
+                else:
+                    doc["found_in_library"] = False
+                doc["score"] = enriched_score_function(doc, student_data)
+
+            final_candidates_for_gemini, library_notice = select_final_candidates_with_library_priority(
+                candidates_for_gemini_selection_docs, top_n=4  # or 원하는 N (보통 4)
+            )
+            st.info(library_notice)
             
             st.info(f"주제 다양성을 고려하여 엄선된 {len(candidates_for_gemini_selection_docs)}권의 최종 후보를 도도 요정에게 전달하여 최종 추천을 받을게요!")
 
