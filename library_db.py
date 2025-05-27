@@ -207,7 +207,7 @@ def find_book_in_library_by_title_author(title_query, author_query):
     if matched_books:
         return matched_books[0] # 간단히 첫 번째 찾은 책 반환
         
-    return {"found_in_library": False, "error": f"DB에서 '{title_query}' (저자: {author_query}) 책을 찾을 수 없음"}
+    return {"found_in_library": False, "title_searched": title_query, "author_searched": author_query}
 
 # --- 직접 실행시 DB 초기화 및 테스트 코드 (원하는 경우만 사용) ---
 if __name__ == "__main__":
