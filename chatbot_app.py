@@ -60,12 +60,13 @@ if not KAKAO_API_KEY: kakao_api_error = "Kakao REST API 키가 .env에 설정되
 
 # --- library_db.py 함수 가져오기 ---
 try:
-    from library_db import find_book_in_library_by_isbn
+    from library_db import find_book_in_library_by_isbn, find_book_in_library_by_title_author # 새 함수 추가
 except ImportError:
     if not st.session_state.get('library_db_import_warning_shown', False): # 중복 경고 방지
-        st.warning("`library_db.py` 또는 `find_book_in_library_by_isbn` 함수 없음! (임시 기능 사용)", icon="😿")
+        st.warning("`library_db.py` 또는 `find_book_in_library_by_isbn` / `find_book_in_library_by_title_author` 함수 없음! (임시 기능 사용)", icon="😿")
         st.session_state.library_db_import_warning_shown = True
     def find_book_in_library_by_isbn(isbn_query): return {"found_in_library": False, "error": "도서관 DB 모듈 로드 실패"}
+    def find_book_in_library_by_title_author(title_query, author_query): return {"found_in_library": False, "error": "도서관 DB 모듈 로드 실패 (제목/저자 검색용)"} # 임시 함수도 추가
 
 # --- 세션 상태 초기화 ---
 if 'TODAYS_DATE' not in st.session_state:
@@ -842,13 +843,39 @@ if submitted:
                 st.stop()
 
             for doc in candidates_for_gemini_selection_docs:
-                isbn = doc.get('cleaned_isbn', '') or doc.get('isbn', '')
-                if isbn:
-                    clean_isbn = "".join(filter(lambda x: x.isdigit() or x.upper() == 'X', str(isbn)))
-                    lib_info = find_book_in_library_by_isbn(clean_isbn)
-                    doc["found_in_library"] = lib_info.get("found_in_library", False)
-                else:
-                    doc["found_in_library"] = False
+                kakao_isbn_cleaned = doc.get('cleaned_isbn', '') # 카카오에서 가져온 (이미 정리된) ISBN
+                kakao_title = doc.get('title', '')
+                kakao_authors_list = doc.get('authors', [])
+                kakao_main_author = kakao_authors_list[0] if kakao_authors_list else "" # 첫 번째 저자 사용
+
+                lib_info = {} # 도서관 검색 결과를 담을 딕셔너리 초기화
+                doc["found_in_library"] = False # 기본값은 못 찾음
+                doc["library_match_type"] = "none" # 어떻게 찾았는지 기록 (isbn, title_author, none)
+
+                if kakao_isbn_cleaned: # 카카오 ISBN 정보가 있다면
+                    lib_info_isbn = find_book_in_library_by_isbn(kakao_isbn_cleaned)
+                    if lib_info_isbn.get("found_in_library"):
+                        lib_info = lib_info_isbn
+                        doc["found_in_library"] = True
+                        doc["library_match_type"] = "isbn_match"
+
+                # ISBN으로 못 찾았고, 제목 정보가 있고, 아직 라이브러리에서 못 찾았다면 제목/저자로 재시도
+                if not doc["found_in_library"] and kakao_title:
+                    lib_info_title_author = find_book_in_library_by_title_author(kakao_title, kakao_main_author)
+                    if lib_info_title_author.get("found_in_library"):
+                        lib_info = lib_info_title_author # 찾았으면 이 정보로 대체!
+                        doc["found_in_library"] = True
+                        doc["library_match_type"] = "title_author_match"
+                
+                # 최종적으로 도서관에서 찾았다면, 관련 정보 저장 (enriched_score_function 등에서 활용 가능)
+                if doc["found_in_library"] and lib_info:
+                    doc["library_isbn"] = lib_info.get("isbn") 
+                    doc["library_title"] = lib_info.get("title") 
+                    doc["call_number"] = lib_info.get("call_number")
+                    doc["library_status"] = lib_info.get("status")
+                    # 필요하다면 더 많은 정보를 doc에 추가할 수 있습니다.
+                
+                # 점수 계산은 found_in_library 상태가 확정된 후에 수행
                 doc["score"] = enriched_score_function(doc, student_data)
 
             final_candidates_for_gemini, library_notice = select_final_candidates_with_library_priority(
@@ -944,19 +971,43 @@ if submitted:
                         st.markdown(f"<div class='reason'>{reason}</div>", unsafe_allow_html=True)
 
                         # 학교 도서관 소장 여부 확인 (기존 로직)
-                        if isbn:
-                            clean_isbn = "".join(filter(lambda x: x.isdigit() or x.upper() == 'X', str(isbn))) # str로 감싸서 안전하게
-                            if len(clean_isbn) in [10, 13]:
-                                lib_info = find_book_in_library_by_isbn(clean_isbn)
-                                if lib_info.get("found_in_library"):
-                                    status_html = f"<div class='library-status-success'>🏫 <strong>우리 학교 도서관 소장!</strong> ✨<br>&nbsp;&nbsp;&nbsp;- 청구기호: {lib_info.get('call_number', '정보 없음')}<br>&nbsp;&nbsp;&nbsp;- 상태: {lib_info.get('status', '소장중')}</div>"
-                                    st.markdown(status_html, unsafe_allow_html=True)
-                                elif lib_info.get("error"): # DB 모듈 로드 실패 등
-                                     st.markdown(f"<div class='library-status-warning'>⚠️ 학교 도서관 정보 조회 불가: {lib_info.get('error')}</div>", unsafe_allow_html=True)
-                                else:
-                                    st.markdown("<div class='library-status-info'>😿 아쉽지만 이 책은 학교 도서관 목록에 없어요. (또는 ISBN 불일치)</div>", unsafe_allow_html=True)
-                            else: st.markdown(f"<div class='library-status-warning'>⚠️ 제공된 ISBN '{isbn}' 형식이 유효하지 않아 학교 도서관 검색 불가.</div>", unsafe_allow_html=True)
-                        else: st.markdown("<div class='library-status-warning'>⚠️ ISBN 정보가 없어 학교 도서관 검색 불가.</div>", unsafe_allow_html=True)
+                        gemini_isbn_str = book_data.get("isbn") # Gemini가 추천한 (아마도 카카오에서 온) ISBN
+                        gemini_title = book_data.get("title", "제목 없음")
+                        gemini_author_str = book_data.get("author", "저자 없음") # book_data의 author는 문자열로 가정
+
+                        library_search_result = {} # 최종 도서관 검색 결과
+                        found_in_lib_flag = False
+                        match_description = "" # 매칭 방식 설명
+
+                        if gemini_isbn_str:
+                            clean_gemini_isbn = "".join(filter(lambda x: x.isdigit() or x.upper() == 'X', str(gemini_isbn_str)))
+                            if len(clean_gemini_isbn) in [10, 13]:
+                                library_search_result = find_book_in_library_by_isbn(clean_gemini_isbn)
+                                if library_search_result.get("found_in_library"):
+                                    found_in_lib_flag = True
+                                    match_description = f"(ISBN 일치: {library_search_result.get('isbn', '')})"
+                            else: # 유효하지 않은 ISBN 형식이라면
+                                library_search_result = {"error": f"제공된 ISBN '{gemini_isbn_str}' 형식 오류"}
+
+
+                        # ISBN으로 못 찾았고, 아직 안 찾았고, 제목이 있다면 제목/저자로 재시도
+                        if not found_in_lib_flag and gemini_title != "제목 없음":
+                            title_author_search_result = find_book_in_library_by_title_author(gemini_title, gemini_author_str)
+                            if title_author_search_result.get("found_in_library"):
+                                library_search_result = title_author_search_result
+                                found_in_lib_flag = True
+                                match_description = f"(제목/저자 일치, 소장 ISBN: {library_search_result.get('isbn', '')} - 추천된 판본과 다를 수 있음)"
+                            
+                        # 최종 결과 표시
+                        if found_in_lib_flag:
+                            status_html = f"<div class='library-status-success'>🏫 <strong>우리 학교 도서관 소장!</strong> {match_description} ✨<br>&nbsp;&nbsp;&nbsp;- 청구기호: {library_search_result.get('call_number', '정보 없음')}<br>&nbsp;&nbsp;&nbsp;- 소장 도서명: {library_search_result.get('title', '정보 없음')}<br>&nbsp;&nbsp;&nbsp;- 상태: {library_search_result.get('status', '소장중')}</div>"
+                            st.markdown(status_html, unsafe_allow_html=True)
+                        elif library_search_result.get("error"): # ISBN 형식 오류 또는 검색 함수 내부 오류 포함
+                            st.markdown(f"<div class='library-status-warning'>⚠️ 학교 도서관 정보 조회 중 문제 발생: {library_search_result.get('error')}</div>", unsafe_allow_html=True)
+                        else: # ISBN 정보가 없었거나, 최종적으로 못 찾은 경우
+                            no_info_reason = " (ISBN 정보 없음)" if not gemini_isbn_str and gemini_title == "제목 없음" else ""
+                            st.markdown(f"<div class='library-status-info'>😿 아쉽지만 이 책은 학교 도서관 목록에 없어요.{no_info_reason}</div>", unsafe_allow_html=True)
+                        else: st.markdown(f"<div class='library-status-warning'>⚠️ 제공된 ISBN '{isbn}' 형식이 유효하지 않아 학교 도서관 검색 불가.</div>", unsafe_allow_html=True)
             
             # 최종적으로 추천된 책이 없고, AI가 오류 메시지도 아닌 일반 텍스트만 반환했을 경우 (마커 없이)
             # 이 경우는 위에서 한번 처리되었지만, 최후의 보루로 AI 응답을 보여줄 수 있음.
