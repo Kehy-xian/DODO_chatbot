@@ -152,7 +152,7 @@ def find_book_in_library_by_isbn(isbn_query):
                 "publication_year": book_tuple[6], "description": book_tuple[7], # 추가된 필드 반환
                 "found_in_library": True
             }
-    return {"found_in_library": False, "error": f"DB에서 ISBN '{isbn_query}'(검색 시도 버전: {q_isbns})를 찾을 수 없음"}
+    return {"found_in_library": False, "isbn_searched": isbn_query} # 'error' 키 대신 검색한 ISBN 정보 등 전달
 
 def find_book_in_library_by_title_author(title_query, author_query):
     """주어진 책 제목과 저자로 DB에서 책을 찾아 반환합니다."""
