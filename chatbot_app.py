@@ -152,7 +152,9 @@ def create_prompt_for_search_query(student_data):
 - 각 검색어는 반드시 1~3개 “명사”의 조합이어야 하며(예: ‘건축 소설’, ‘건축가’, ‘건축 이야기’, ‘과학 만화’ 등),
   “설명문, 너무 긴 복합어, 완전한 문장형, 예술적 수식, 문단, 느낌표, 불필요한 꾸밈말, 부연 설명”은 절대 포함하지 마세요.
 - 키워드는 반드시 실제 책 제목/분야/목차/도서관 분류에서 많이 쓰이는 현실적인 단어만을 조합해야 합니다.
-- 주제와 장르/관심사를 다양한 방식으로 조합하여 생성하세요.
+- **생성되는 키워드 중 최소 하나 이상은 학생이 명시적으로 선택한 주요 주제('{topic}')와 선호 장르('{genres_str}')를 직접적으로 결합한 형태여야 합니다.** (예: '{topic} {genres[0] if genres else "관련"} {genres_str if not genres else ""}' 또는 단순히 '{topic} {genres_str}' 형태. 만약 장르가 여러 개면 그 중 하나 이상과 결합)
+- **다른 키워드들도 가능한 주요 주제('{topic}')와의 연관성을 유지하도록 노력해주세요.** 주제와 장르를 다양한 방식으로 조합하되, 주제에서 너무 벗어난 하위 장르나 일반적인 장르 키워드는 최소화해주세요.
+- 예를 들어, 주제가 '학교도서관'이고 장르가 '소설'이라면, '학교도서관 소설', '학교도서관 배경 청소년 소설' 등을 우선적으로 고려하고, 주제와 직접 관련 없는 '디스토피아 소설' 같은 키워드는 학생의 다른 관심사가 명확하지 않다면 지양해주세요.
 - 각 키워드는 한 줄에 하나씩 제안하세요(최소 3개~최대 5개, 부연설명 금지).
 - [예시]
 {fallback_example_str}
@@ -169,7 +171,7 @@ def create_prompt_for_search_query(student_data):
 관심사: {interests}
 """
     return prompt
-
+    
 def create_prompt_for_no_results_advice(student_data, original_search_queries):
     level_desc = student_data["reading_level"]
     topic = student_data["topic"]
