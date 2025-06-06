@@ -606,15 +606,6 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 st.sidebar.markdown("---")
-st.sidebar.markdown(
-    """<div style="text-align:center; margin-bottom:0.2em;"><span style="font-weight:bold;">👩‍💻 총괄 디렉터: 꾸물 🐌</span><br><span style="font-weight:bold;">🕊️ AI 어시스턴트: 도도</span></div>""",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    """<div style="font-size:0.92em; color:#888; text-align:center; margin-top:4px; margin-bottom:12px;">문의: <a href="mailto:zambi23@gmail.com" style="color:#888; text-decoration:underline;">zambi23@gmail.com</a><br>블로그: <a href="https://blog.naver.com/snailslowclub" style="color:#888; text-decoration:underline;" target="_blank">꾸물책장</a></div>""",
-    unsafe_allow_html=True
-)
-st.sidebar.markdown("---")
 st.sidebar.caption("⚠️ API 호출은 사용량에 따라 비용이 발생할 수 있으니 주의해주세요!")
 
 
